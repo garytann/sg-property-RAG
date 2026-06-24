@@ -1,7 +1,8 @@
 from collections import defaultdict
 from typing import Any, Dict, List
 
-from app.rag.retrieval import retrieve_context
+from app.rag.query_planner import create_retrieval_plan
+from app.rag.retrieval import retrieve_context_with_plan
 from app.services.property_service import (
     get_property,
     list_properties,
@@ -27,13 +28,19 @@ def _select_properties(
     conn,
     message: str,
     retrieved_context: List[Dict[str, Any]],
+    retrieval_plan: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
     named = _explicitly_named_properties(conn, message)
     if named:
         return named
 
     message_lower = message.lower()
-    if "shortlist" in message_lower or "shortlisted" in message_lower:
+    filters = retrieval_plan.get("filters") or {}
+    if (
+        "shortlist" in message_lower
+        or "shortlisted" in message_lower
+        or filters.get("status") == "sample_shortlisted"
+    ):
         return list_properties(conn, status="sample_shortlisted", limit=50)
 
     property_ids = []
@@ -96,8 +103,14 @@ def _best_context_snippets(
 
 
 def answer_chat(conn, message: str, top_k: int = 12) -> Dict[str, Any]:
-    retrieved_context = retrieve_context(message, top_k=top_k)
-    selected_properties = _select_properties(conn, message, retrieved_context)
+    retrieval_plan = create_retrieval_plan(message)
+    retrieved_context = retrieve_context_with_plan(retrieval_plan, top_k=top_k)
+    selected_properties = _select_properties(
+        conn,
+        message,
+        retrieved_context,
+        retrieval_plan,
+    )
     selected_ids = {property_row["id"] for property_row in selected_properties}
     selected_context = [
         doc for doc in retrieved_context if doc["property_id"] in selected_ids
@@ -156,12 +169,14 @@ def answer_chat(conn, message: str, top_k: int = 12) -> Dict[str, Any]:
             "project_name": doc["project_name"],
             "document_type": doc["document_type"],
             "score": doc["score"],
+            "matched_queries": doc.get("matched_queries", []),
         }
         for doc in selected_context
     ]
 
     return {
         "answer": "\n".join(lines),
+        "retrieval_plan": retrieval_plan,
         "properties": selected_properties,
         "metrics": property_metrics,
         "ranking": ranking,

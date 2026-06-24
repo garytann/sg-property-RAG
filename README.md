@@ -4,12 +4,19 @@ Lightweight FastAPI backend for experimenting with a property-search second brai
 
 - Postgres stores structured property rows and notes.
 - A local TF-IDF index provides first-pass RAG over notes and listing descriptions.
+- An optional LLM retrieval planner rewrites vague chat questions into better index searches.
 - Calculation tools compute PSF, gross rental yield, illustrative BSD, and mortgage estimates.
 - A `/chat` endpoint retrieves context, runs tools, and returns a source-backed analyst response.
 
 ## Postgres Setup
 
-The app reads `DATABASE_URL`. If it is not set, it uses:
+The app reads local settings from `.env`. Start from the example file:
+
+```bash
+cp .env.example .env
+```
+
+If `DATABASE_URL` is not set in `.env` or your shell, the app uses:
 
 ```text
 postgresql://localhost:5432/property_ai_poc
@@ -23,9 +30,27 @@ createdb property_ai_poc
 
 If your Postgres requires a username/password, set `DATABASE_URL` before running scripts:
 
-```bash
-export DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/property_ai_poc"
+```text
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/property_ai_poc
 ```
+
+## Optional LLM Retrieval Planner
+
+The `/chat` endpoint can use an LLM to rewrite a user question into 2-4 focused RAG search queries before searching `storage/rag_index.json`.
+
+Set an OpenAI API key to enable it:
+
+```text
+OPENAI_API_KEY=your_api_key_here
+```
+
+The model is configurable:
+
+```text
+OPENAI_MODEL=gpt-5.5
+```
+
+If `OPENAI_API_KEY` is not set, the app still works. It uses a deterministic local fallback planner with keyword expansion for risk, rental yield, location, and viewing/layout questions.
 
 ## Run Locally
 
@@ -72,6 +97,8 @@ Example chat request:
   "top_k": 12
 }
 ```
+
+The chat response includes a `retrieval_plan` field showing whether the planner used `llm` or `fallback`, the expanded search queries, and any filters it applied.
 
 ## Data
 
