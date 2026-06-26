@@ -8,6 +8,7 @@ from app.db.seed import seed_database
 from app.rag.retrieval import retrieve_context
 from app.rag.vector_store import rebuild_index
 from app.services.chat_service import answer_chat
+from app.services.intake_service import list_intake_events, process_intake
 from app.services.property_service import get_property, list_notes, list_properties
 from app.tools.calculations import (
     calculate_buyer_stamp_duty,
@@ -34,6 +35,10 @@ class SearchNotesRequest(BaseModel):
     top_k: int = Field(default=8, ge=1, le=30)
     property_id: Optional[str] = None
     document_type: Optional[str] = None
+
+
+class IntakeRequest(BaseModel):
+    message: str = Field(..., min_length=1)
 
 
 class YieldRequest(BaseModel):
@@ -134,6 +139,20 @@ def search_notes(request: SearchNotesRequest) -> list:
         property_id=request.property_id,
         document_type=request.document_type,
     )
+
+
+@app.post("/intake")
+def intake(request: IntakeRequest) -> dict:
+    with get_connection() as conn:
+        result = process_intake(conn, request.message)
+        index_counts = rebuild_index(conn)
+        return {**result, "index": index_counts}
+
+
+@app.get("/intake-events")
+def get_intake_events(limit: int = Query(default=50, ge=1, le=200)) -> list:
+    with get_connection() as conn:
+        return list_intake_events(conn, limit=limit)
 
 
 @app.post("/calculate/yield")

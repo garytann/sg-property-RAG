@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from app.rag.query_planner import create_retrieval_plan
 from app.rag.retrieval import retrieve_context_with_plan
@@ -70,17 +70,50 @@ def _notes_by_property(
     return grouped
 
 
-def _format_money(value: float) -> str:
+def _format_money(value: Optional[float]) -> str:
+    if value is None:
+        return "unknown"
     return f"${value:,.0f}"
+
+
+def _format_area(value: Optional[float]) -> str:
+    if value is None:
+        return "unknown sqft"
+    return f"{value:,.0f} sqft"
+
+
+def _format_psf(property_row: Dict[str, Any], metrics: Dict[str, Any]) -> str:
+    if not property_row.get("asking_price") or not property_row.get("floor_area_sqft"):
+        return "PSF unavailable"
+    return f"PSF ${metrics['psf']:,.0f}"
+
+
+def _format_yield(property_row: Dict[str, Any], metrics: Dict[str, Any]) -> str:
+    if not property_row.get("asking_price") or not property_row.get("monthly_rent_estimate"):
+        return "gross yield unavailable"
+    return f"gross yield {metrics['gross_yield_percent']:.2f}%"
 
 
 def _format_property_line(property_row: Dict[str, Any], metrics: Dict[str, Any]) -> str:
     return (
         f"- {property_row['project_name']}: "
         f"asking {_format_money(property_row['asking_price'])}, "
-        f"{property_row['floor_area_sqft']:,.0f} sqft, "
-        f"PSF ${metrics['psf']:,.0f}, "
-        f"gross yield {metrics['gross_yield_percent']:.2f}%"
+        f"{_format_area(property_row['floor_area_sqft'])}, "
+        f"{_format_psf(property_row, metrics)}, "
+        f"{_format_yield(property_row, metrics)}"
+    )
+
+
+def _format_ranking_line(item: Dict[str, Any], property_row: Dict[str, Any]) -> str:
+    yield_text = (
+        f"yield {item['gross_yield_percent']:.2f}%"
+        if property_row.get("asking_price") and property_row.get("monthly_rent_estimate")
+        else "yield unavailable"
+    )
+    return (
+        f"(score {item['investment_score']:.2f}, "
+        f"{yield_text}, "
+        f"risk score {item['risk_score']})"
     )
 
 
@@ -132,13 +165,15 @@ def answer_chat(conn, message: str, top_k: int = 12) -> Dict[str, Any]:
         lines.append(_format_property_line(property_row, property_metrics[property_row["id"]]))
 
     if ranking:
+        properties_by_id = {
+            property_row["id"]: property_row for property_row in selected_properties
+        }
         lines.extend(["", "Current ranking from this simple POC score:"])
         for index, item in enumerate(ranking, start=1):
+            property_row = properties_by_id.get(item["property_id"], {})
             lines.append(
                 f"{index}. {item['project_name']} "
-                f"(score {item['investment_score']:.2f}, "
-                f"yield {item['gross_yield_percent']:.2f}%, "
-                f"risk score {item['risk_score']})"
+                f"{_format_ranking_line(item, property_row)}"
             )
 
     lines.extend(["", "Relevant notes surfaced:"])

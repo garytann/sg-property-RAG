@@ -44,6 +44,20 @@ def initialize_database(conn) -> None:
                 FOREIGN KEY(property_id) REFERENCES properties(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS intake_events (
+                id TEXT PRIMARY KEY,
+                raw_input TEXT NOT NULL,
+                property_id TEXT,
+                extracted_fields JSONB NOT NULL,
+                extracted_notes JSONB NOT NULL,
+                missing_fields JSONB NOT NULL,
+                follow_up_questions JSONB NOT NULL,
+                confidence DOUBLE PRECISION,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(property_id) REFERENCES properties(id) ON DELETE SET NULL
+            );
+
             CREATE INDEX IF NOT EXISTS idx_properties_project_name
                 ON properties(project_name);
             CREATE INDEX IF NOT EXISTS idx_properties_status
@@ -54,6 +68,16 @@ def initialize_database(conn) -> None:
                 ON property_notes(property_id);
             CREATE INDEX IF NOT EXISTS idx_notes_type
                 ON property_notes(note_type);
+            CREATE INDEX IF NOT EXISTS idx_intake_events_property_id
+                ON intake_events(property_id);
+            CREATE INDEX IF NOT EXISTS idx_intake_events_status
+                ON intake_events(status);
+            """
+        )
+        cursor.execute(
+            """
+            ALTER TABLE property_notes
+            ADD COLUMN IF NOT EXISTS source_intake_event_id TEXT;
             """
         )
     conn.commit()

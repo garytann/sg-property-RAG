@@ -81,6 +81,8 @@ conda run -n property-ai-poc uvicorn app.main:app --port 8000
 GET  /properties
 GET  /properties/{property_id}
 GET  /properties/{property_id}/notes
+POST /intake
+GET  /intake-events
 POST /search-notes
 POST /calculate/yield
 POST /calculate/psf
@@ -99,6 +101,101 @@ Example chat request:
 ```
 
 The chat response includes a `retrieval_plan` field showing whether the planner used `llm` or `fallback`, the expanded search queries, and any filters it applied.
+
+## Intake Flow
+
+The `/intake` endpoint accepts messy user input and separates it into canonical property fields, notes, missing fields, and follow-up questions.
+
+Example request:
+
+```json
+{
+  "message": "Viewed Grand Dunman. Nice layout, but road noise was obvious. Agent said asking is around 1.6M."
+}
+```
+
+Backend flow for incomplete information:
+
+```text
+User input
+   |
+   v
+POST /intake
+   |
+   v
++--------------------------+
+| Preserve raw input       |
+| intake_events.raw_input  |
++--------------------------+
+   |
+   v
++--------------------------+
+| Extract meaning          |
+| - project identity       |
+| - structured fields      |
+| - viewing/risk/rent notes|
+| - confidence             |
++--------------------------+
+   |
+   v
++--------------------------+
+| Enough identity?         |
+| project/address/source?  |
++--------------------------+
+   | yes                         | no
+   v                             v
++--------------------------+   +--------------------------+
+| Find existing property   |   | Save intake_event only   |
+| or create property shell |   | status: needs_identity   |
++--------------------------+   +--------------------------+
+   |                             |
+   v                             v
++--------------------------+   +--------------------------+
+| Fill only empty fields   |   | Ask: which project or    |
+| never invent/overwrite   |   | address is this for?     |
++--------------------------+   +--------------------------+
+   |
+   v
++--------------------------+
+| Save notes if property   |
+| is known                 |
+| property_notes           |
++--------------------------+
+   |
+   v
++--------------------------+
+| Check missing analysis   |
+| fields: price, sqft,     |
+| beds, rent, tenure, TOP, |
+| district                 |
++--------------------------+
+   |
+   v
++--------------------------+
+| Save intake_event        |
+| - extracted JSON         |
+| - missing fields         |
+| - follow-up questions    |
+| - status                 |
++--------------------------+
+   |
+   v
++--------------------------+
+| Rebuild local RAG index  |
+| so new notes are         |
+| searchable by /chat      |
++--------------------------+
+   |
+   v
+Response to user:
+- created/updated property id
+- extracted fields
+- saved notes
+- missing fields
+- next follow-up questions
+```
+
+This design lets the app capture partial truth without forcing incomplete user input into a fully populated structured listing.
 
 ## Data
 

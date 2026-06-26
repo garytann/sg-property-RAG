@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -29,4 +29,17 @@ class PropertyNote(BaseModel):
     note_type: str
     note_text: str
     noted_at: Optional[str]
+    source_intake_event_id: Optional[str] = None
 
+
+class IntakeEvent(BaseModel):
+    id: str
+    raw_input: str
+    property_id: Optional[str]
+    extracted_fields: Dict[str, Any]
+    extracted_notes: List[Dict[str, Any]]
+    missing_fields: List[str]
+    follow_up_questions: List[str]
+    confidence: Optional[float]
+    status: str
+    created_at: str
