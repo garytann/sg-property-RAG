@@ -96,6 +96,71 @@ The React app uses Vite's `/api` proxy for local development. To point it at ano
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
+## Run With Docker
+
+Create your local environment file:
+
+```bash
+cp .env.example .env
+```
+
+For the Docker stack, keep the Postgres host as the Compose service name:
+
+```text
+POSTGRES_HOST=postgres
+POSTGRES_DB=property_ai_poc
+POSTGRES_USER=property_user
+POSTGRES_PASSWORD=property_password
+NGINX_HTTP_PORT=80
+```
+
+Start the full stack:
+
+```bash
+docker compose up --build
+```
+
+Open the application through Nginx:
+
+```text
+http://localhost
+```
+
+Nginx routes traffic like this:
+
+```text
+Browser
+  |
+  v
+Nginx :80
+  |-- /      -> React frontend container
+  |-- /api/* -> FastAPI backend container
+  |-- /docs  -> FastAPI docs
+```
+
+The Docker services are:
+
+```text
+postgres  Postgres database with a named volume
+api       FastAPI backend on internal port 8000
+frontend  Built React static app on internal port 8080
+nginx     Public gateway on port 80
+```
+
+To stop the stack:
+
+```bash
+docker compose down
+```
+
+To remove the database volume as well:
+
+```bash
+docker compose down -v
+```
+
+HTTPS is scaffolded in [docker/nginx.conf](docker/nginx.conf), but it is commented out because you need certificate files first. Add certs under `docker/certs`, uncomment the 443 port mapping in [compose.yml](compose.yml), then enable the TLS server block.
+
 ## Useful Endpoints
 
 ```text
