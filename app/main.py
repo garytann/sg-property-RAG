@@ -1,6 +1,7 @@
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from app.db.database import fetch_one, get_connection, initialize_database
@@ -22,6 +23,17 @@ app = FastAPI(
     title="Property AI POC Backend",
     description="Lightweight property-analysis backend with Postgres, RAG search, calculation tools, and chat orchestration.",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 

@@ -54,6 +54,8 @@ If `OPENAI_API_KEY` is not set, the app still works. It uses a deterministic loc
 
 ## Run Locally
 
+Backend:
+
 ```bash
 conda activate property-ai-poc
 python scripts/ingest_csv.py
@@ -73,6 +75,25 @@ If you prefer not to activate the env:
 conda run -n property-ai-poc python scripts/ingest_csv.py
 conda run -n property-ai-poc python scripts/rebuild_vector_index.py
 conda run -n property-ai-poc uvicorn app.main:app --port 8000
+```
+
+Frontend:
+
+```bash
+npm install
+npm run dev
+```
+
+Then open:
+
+```text
+http://127.0.0.1:5173
+```
+
+The React app uses Vite's `/api` proxy for local development. To point it at another backend URL, set:
+
+```text
+VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
 ## Useful Endpoints
