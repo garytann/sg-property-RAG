@@ -8,31 +8,6 @@ Lightweight FastAPI backend for experimenting with a property-search second brai
 - Calculation tools compute PSF, gross rental yield, illustrative BSD, and mortgage estimates.
 - A `/chat` endpoint retrieves context, runs tools, and returns a source-backed analyst response.
 
-## Postgres Setup
-
-The app reads local settings from `.env`. Start from the example file:
-
-```bash
-cp .env.example .env
-```
-
-If `DATABASE_URL` is not set in `.env` or your shell, the app uses:
-
-```text
-postgresql://localhost:5432/property_ai_poc
-```
-
-Create the database first using your Postgres GUI, or with `createdb`:
-
-```bash
-createdb property_ai_poc
-```
-
-If your Postgres requires a username/password, set `DATABASE_URL` before running scripts:
-
-```text
-DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/property_ai_poc
-```
 
 ## Optional LLM Retrieval Planner
 
@@ -51,50 +26,6 @@ OPENAI_MODEL=gpt-5.5
 ```
 
 If `OPENAI_API_KEY` is not set, the app still works. It uses a deterministic local fallback planner with keyword expansion for risk, rental yield, location, and viewing/layout questions.
-
-## Run Locally
-
-Backend:
-
-```bash
-conda activate property-ai-poc
-python scripts/ingest_csv.py
-python scripts/rebuild_vector_index.py
-uvicorn app.main:app --port 8000
-```
-
-Then open:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-If you prefer not to activate the env:
-
-```bash
-conda run -n property-ai-poc python scripts/ingest_csv.py
-conda run -n property-ai-poc python scripts/rebuild_vector_index.py
-conda run -n property-ai-poc uvicorn app.main:app --port 8000
-```
-
-Frontend:
-
-```bash
-npm install
-npm run dev
-```
-
-Then open:
-
-```text
-http://127.0.0.1:5173
-```
-
-The React app uses Vite's `/api` proxy for local development. To point it at another backend URL, set:
-
-```text
-VITE_API_BASE_URL=http://127.0.0.1:8000
-```
 
 ## Run With Docker
 
@@ -159,7 +90,6 @@ To remove the database volume as well:
 docker compose down -v
 ```
 
-HTTPS is scaffolded in [docker/nginx.conf](docker/nginx.conf), but it is commented out because you need certificate files first. Add certs under `docker/certs`, uncomment the 443 port mapping in [compose.yml](compose.yml), then enable the TLS server block.
 
 ## Useful Endpoints
 
