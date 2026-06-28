@@ -182,6 +182,10 @@ docker/certs/
 *.key
 *.crt
 
+# Local Nginx basic-auth password file
+docker/auth/.htpasswd
+!docker/auth/.htpasswd.example
+
 # Spyder project settings
 .spyderproject
 .spyproject

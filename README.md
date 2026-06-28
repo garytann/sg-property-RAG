@@ -90,6 +90,38 @@ To remove the database volume as well:
 docker compose down -v
 ```
 
+## Demo Password
+
+Nginx protects the app with Basic Auth using:
+
+```text
+docker/auth/.htpasswd
+```
+
+The local `.htpasswd` file is ignored by git. A temporary credential is available for local startup:
+
+```text
+username: demo
+password: change-me-now
+```
+
+Regenerate it before sharing the app:
+
+```bash
+mkdir -p docker/auth
+printf 'demo:%s\n' "$(openssl passwd -apr1 'your-new-demo-password')" > docker/auth/.htpasswd
+docker compose restart nginx
+```
+
+Then share:
+
+```text
+URL: https://your-domain.com
+Username: demo
+Password: your-new-demo-password
+```
+
+To rotate access later, run the same `printf ... openssl passwd ...` command with a new password and restart Nginx.
 
 ## Useful Endpoints
 
