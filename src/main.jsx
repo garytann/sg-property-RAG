@@ -17,7 +17,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 const examples = {
   intake:
-    "Viewed Grand Dunman. Nice layout, near to food market and amenities but road noise was obvious. Agent said asking is around 1.6M. 2 bed 721 sqft.",
+    "Viewed Grand Dunman. Nice layout, near to food market and amenities but road noise was obvious. Agent said asking is around 1.6M. 2 bed 721 sqft. The current rental is $4200 per month ",
   chat: "Which shortlisted property has the best rental yield but worrying risk notes?",
 };
 

@@ -62,6 +62,7 @@ services:
       - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./docker/certs:/etc/nginx/certs:ro
       - ./docker/auth:/etc/nginx/auth:ro
+      - ./docker/error-pages:/usr/share/nginx/error-pages:ro
 
 volumes:
   postgres_data:
